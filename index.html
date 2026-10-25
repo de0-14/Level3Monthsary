@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Level 3 Cleared</title>
+<meta name="theme-color" content="#2a0a1c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{
+  --berry:#3b0f26; --deep:#2a0a1c; --plum:#7a1740; --pink:#ff5c93; --hot:#e8337a; --orange:#f4611e; --tang:#ff9a3c;
+  --peach:#ffd3bd; --blush:#fff1ec; --sun:#ffe28a;
+  --px:"Press Start 2P","Courier New",monospace;
+  --body:"Pixelify Sans","Trebuchet MS",Verdana,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{touch-action:manipulation;font-family:var(--body);background:var(--blush);color:var(--berry)}
+body.lock{overflow:hidden;height:100vh}
+button{font-family:var(--px);cursor:pointer;border:0}
+:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
+svg.h{width:1em;height:.86em;fill:currentColor;shape-rendering:crispEdges}
+
+/* ---------- game intro ---------- */
+#intro{position:fixed;inset:0;z-index:20;background:var(--deep);display:grid;place-items:center;padding:max(1rem,env(safe-area-inset-top)) max(1rem,env(safe-area-inset-right)) max(1rem,env(safe-area-inset-bottom)) max(1rem,env(safe-area-inset-left));clip-path:inset(0);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+#intro.wipe{animation:wipe 1s steps(12) forwards;pointer-events:none}
+@keyframes wipe{to{clip-path:inset(0 0 100% 0)}}
+.cab{width:min(96vw,880px);text-align:center}
+.hud{display:flex;justify-content:space-between;font:12px var(--px);color:var(--sun);padding:0 .25rem .8rem}
+.screen{position:relative;border:6px solid var(--pink);box-shadow:0 0 0 6px var(--plum),10px 10px 0 6px #000}
+#game{display:block;width:100%;aspect-ratio:16/9;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;image-rendering:pixelated}
+.ov{position:absolute;inset:0;background:rgba(42,10,28,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.4rem;color:var(--blush)}
+.ov h2{font:clamp(.8rem,3.2vw,1.7rem)/1.6 var(--px);text-shadow:3px 3px 0 var(--hot)}
+.ov small{font:clamp(.5rem,1.7vw,.8rem)/1.8 var(--px);color:var(--peach)}
+.btn{background:var(--tang);color:var(--berry);padding:1rem 1.4rem;font-size:clamp(.65rem,2.4vw,1rem);box-shadow:0 6px 0 var(--plum),0 0 0 4px var(--berry)}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--plum),0 0 0 4px var(--berry)}
+.blink{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.pad{display:flex;gap:1.1rem;justify-content:center;margin-top:1.6rem}
+.pad .btn{min-height:64px;padding:1.3rem .6rem;-webkit-tap-highlight-color:transparent;font-size:clamp(.6rem,2.4vw,.95rem);user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}
+#back{flex:1;background:var(--peach)}#walk{flex:1.5;background:var(--pink)}#jump{flex:1}
+.pad .btn:disabled{opacity:.35;cursor:default}
+.dist{flex:1;margin:0 1rem;height:14px;border:3px solid var(--pink);align-self:center}
+.dist i{display:block;height:100%;width:0;background:var(--sun)}
+#tip{font:11px/1.8 var(--px);color:var(--peach);margin-top:1.2rem}
+#clear{display:none}
+#clear.on{display:flex}
+
+/* ---------- hero ---------- */
+.hero{position:relative;min-height:100vh;min-height:100svh;overflow:hidden;display:grid;place-items:center;padding:2rem 1rem 6rem;
+  background:linear-gradient(#ff8a2b 0 20%,#ff7440 20% 40%,#ff5f5f 40% 60%,#ff4f8b 60% 80%,#e8337a 80%)}
+.sun{position:absolute;left:50%;top:44%;width:min(95vw,560px);aspect-ratio:1;transform:translate(-50%,-50%);background:var(--sun);
+  clip-path:polygon(30% 0,70% 0,70% 8%,84% 8%,84% 16%,92% 16%,92% 30%,100% 30%,100% 70%,92% 70%,92% 84%,84% 84%,84% 92%,70% 92%,70% 100%,30% 100%,30% 92%,16% 92%,16% 84%,8% 84%,8% 70%,0 70%,0 30%,8% 30%,8% 16%,16% 16%,16% 8%,30% 8%)}
+.ground{position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(var(--tang) 0 12px,var(--plum) 12px);}
+.ground::after{content:"";position:absolute;inset:12px 0 0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.28) 0 4px,transparent 4px 32px),repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 4px,transparent 4px 22px)}
+.hero .center{position:relative;z-index:2;text-align:center}
+.hero h1{font:400 clamp(1.4rem,6.2vw,4rem)/1.4 var(--px);color:var(--blush);text-shadow:4px 4px 0 var(--berry);outline:0}
+.progress{display:flex;justify-content:center;gap:.35rem;margin-top:1.8rem;font-size:clamp(1rem,3.6vw,1.7rem)}
+.progress .h{color:var(--berry);opacity:.35}
+.progress .h.on{color:var(--blush);opacity:1;filter:drop-shadow(3px 3px 0 var(--berry))}
+.hero .sub{margin-top:1rem;font:clamp(.6rem,2.2vw,.95rem)/1.7 var(--px);color:var(--berry);background:var(--sun);display:inline-block;padding:.6rem .9rem;box-shadow:4px 4px 0 var(--berry)}
+.cue{position:absolute;z-index:3;bottom:70px;left:50%;transform:translateX(-50%);font:11px var(--px);color:var(--blush);text-decoration:none;text-shadow:2px 2px 0 var(--berry)}
+
+/* ---------- band ---------- */
+.band{background:var(--berry);color:var(--sun);overflow:hidden;white-space:nowrap;padding:.9rem 0;border-bottom:6px solid var(--pink)}
+.track{display:inline-flex;animation:slide 28s steps(120) infinite;font:12px var(--px)}
+.track span{padding-right:2.2rem}
+.track i{font-style:normal;color:var(--pink);padding-right:2.2rem}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* ---------- letter ---------- */
+.letterwrap{position:relative;overflow:hidden;padding:6rem 1rem 7rem;
+  background:conic-gradient(#ffd3bd 25%,#ffc9bc 0 50%,#ffd3bd 0 75%,#ffc9bc 0) 0 0/48px 48px}
+.box{position:relative;z-index:2;width:min(38rem,100% - 2rem);margin:0 auto;background:var(--blush);padding:2.6rem clamp(1.2rem,4.5vw,2.6rem) 2rem;
+  box-shadow:0 -6px 0 0 var(--berry),0 6px 0 0 var(--berry),-6px 0 0 0 var(--berry),6px 0 0 0 var(--berry),12px 18px 0 0 rgba(59,15,38,.3)}
+.tag{position:absolute;top:-22px;left:-6px;background:var(--hot);color:var(--blush);font:10px/1 var(--px);padding:.7rem .8rem;box-shadow:4px 4px 0 var(--berry)}
+.box h2{font:400 clamp(.9rem,3.4vw,1.25rem)/1.6 var(--px);color:var(--hot);margin-bottom:.5rem}
+.box .tw{font:clamp(.55rem,2vw,.7rem)/1.8 var(--px);color:var(--orange);margin-bottom:1.6rem}
+.box p{font-size:clamp(1.12rem,3.2vw,1.3rem);line-height:1.65;margin-bottom:1.1em}
+.next{display:block;text-align:right;color:var(--hot);animation:blink 1s steps(2) infinite}
+
+/* ---------- closing ---------- */
+.closing{background:var(--deep);color:var(--blush);text-align:center;padding:5rem 1.5rem 4rem;border-top:6px solid var(--pink)}
+.closing h2{font:400 clamp(1rem,4.4vw,2rem)/1.6 var(--px);text-shadow:3px 3px 0 var(--hot);margin-bottom:1.2rem}
+.closing p{font:12px/1.9 var(--px);color:var(--peach);margin-bottom:2rem}
+.fl{position:fixed;z-index:30;font-size:22px;pointer-events:none;color:var(--pink)}
+
+@media (orientation:landscape) and (max-height:560px){
+  #intro{display:block}
+  .cab{width:100%;max-width:none;height:100%;display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto 1fr 1fr;gap:.6rem .9rem}
+  .hud{grid-column:1/4;padding-bottom:0}
+  .screen{grid-column:2;grid-row:2/4;align-self:center;width:min(62vw,calc((100vh - 70px)*16/9));width:min(62vw,calc((100svh - 70px)*16/9))}
+  .pad{display:contents}
+  #back{grid-column:1;grid-row:2}#walk{grid-column:1;grid-row:3}#jump{grid-column:3;grid-row:2/4}
+  .pad .btn{margin:0;min-height:0;padding:.4rem}
+  #tip{display:none}
+}
+@media (max-width:720px){
+  .letterwrap{padding:5rem 0 6rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01s!important;animation-delay:0s!important}
+}
+</style>
+</head>
+<body class="lock">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="px" viewBox="0 0 7 6"><path d="M1 0h2v1h1V0h2v1h1v2h-1v1h-1v1h-1v1H3V5H2V4H1V3H0V1h1z"/></symbol></svg>
+
+<!-- INTRO: walk to him -->
+<section id="intro" aria-label="Game intro">
+  <div class="cab">
+    <div class="hud"><span>LEVEL 3</span><span class="dist"><i id="bar"></i></span><span id="score"><svg class="h"><use href="#px"/></svg> 0/3</span></div>
+    <div class="screen">
+      <canvas id="game" aria-label="A pixel scene where you walk to meet your baby"></canvas>
+      <div class="ov" id="title">
+        <h2>HAPPY MONTHSARY<br>LEVEL 3</h2>
+        <button class="btn blink" id="start" type="button">PRESS START</button>
+        <small>for my baby</small>
+      </div>
+      <div class="ov" id="clear"><h2>LEVEL 3<br>CLEARED!</h2><small>I found you again.</small></div>
+    </div>
+    <div class="pad"><button class="btn" id="back" type="button" disabled>&#9664; BACK</button><button class="btn" id="walk" type="button" disabled>WALK &#9654;</button><button class="btn" id="jump" type="button" disabled>JUMP &#9650;</button></div>
+    <p id="tip">Move with the buttons or WASD / arrows. Hop the thorns, jump for the 3 hearts.</p>
+  </div>
+</section>
+
+<main id="site">
+  <section class="hero" aria-labelledby="title-h">
+    <div class="sun"></div>
+    <div class="center">
+      <h1 id="title-h" tabindex="-1">Happy Monthsary<br>baby!!!</h1>
+      <div class="progress" aria-hidden="true" id="prog"></div>
+      <p class="sub">3/12 away from our anniversary</p>
+    </div>
+    <a class="cue blink" href="#letter">&#9660; SCROLL</a>
+    <div class="ground"></div>
+  </section>
+
+  <div class="band" aria-hidden="true"><div class="track" id="track"></div></div>
+
+  <section class="letterwrap" id="letter" aria-label="Letter">
+
+    <article class="box">
+      <div class="tag">&#9654; LETTER FOR ALEX</div>
+      <h2>Happy Monthsary baby!!!</h2>
+      <div class="tw">3/12 away from our anniversary</div>
+      <p>Another month has passed, and somehow I love you even more than I did the month before. Thank you for bringing so much light into my life, baby. Every day with you feels a little warmer and a little softer, and I am more grateful for you than I know how to say.</p>
+      <p>I'm sorry for being so easily overwhelmed, and instead of letting myself breathe, I kept slipping into negative thoughts and brushed aside the points you were making. I never want to fall apart in a way that ends up hurting you, and I'm sorry you had to take the weight of my venting.</p>
+      <p>I'm sorry for everything, my love: for being annoying, for the times I made you feel like a burden was resting on your shoulders, for bothering you again and again, and for leaning on you too much. You deserve to feel light and happy with me, and I want to keep growing so that my love feels like a comfort to you and never a weight.</p>
+      <p>Thank you for understanding me, even when I know I'm not the easiest person to understand. Thank you for not being afraid to be honest and firm with me, too. I needed to hear it. I was being unfair last night, and even today I kept asking for your attention and reassurance. But deep down I know that what we have is different, and I know it doesn't just fade away.</p>
+      <p>You are my calm, my favorite person, and my safest place. I love you so much, Alex, more than these little pixels, more than this whole website, more than I could ever fit into a letter. I really do hope we stay together forever. Month after month, level after level, I want to keep choosing you.</p>
+      <p>Happy monthsary, baby. Three down, nine to go until our anniversary, and I would happily play every single level with you. I love you, always.</p>
+      <span class="next" aria-hidden="true">&#9660;</span>
+    </article>
+  </section>
+
+  <section class="closing">
+    <h2>LEVEL 4<br>LOADING...</h2>
+    <p>CONTINUE?</p>
+    <button class="btn" id="more" type="button">&#9654; YES, ALWAYS</button>
+    <p id="days" hidden style="margin-top:2rem"></p>
+  </section>
+</main>
+
+<script>
+/* Your start date as YYYY-MM-DD shows "days played" at the bottom. Leave "" to hide it. */
+const START_DATE = "";
+
+const $ = s => document.querySelector(s);
+const HEART = '<svg class="h" viewBox="0 0 7 6"><use href="#px"/></svg>';
+$("#prog").innerHTML = Array.from({length:12},(_,i)=>`<svg class="h${i<3?" on":""}"><use href="#px"/></svg>`).join("");
+const unit = '<span>HAPPY MONTHSARY</span><i>&#9829;</i><span>LEVEL 3 CLEARED</span><i>&#9829;</i><span>9 MORE TO GO</span><i>&#9829;</i>';
+$("#track").innerHTML = unit.repeat(8);
+
+/* ---- floating pixel hearts (DOM) ---- */
+function burst(el, n){
+  const r = el.getBoundingClientRect();
+  for(let i=0;i<n;i++){
+    const f = document.createElement("div");
+    f.className = "fl"; f.innerHTML = HEART;
+    f.style.color = ["#ff5c93","#ff9a3c","#e8337a","#ffe28a"][i%4];
+    f.style.left = r.left + Math.random()*r.width + "px"; f.style.top = r.top + "px";
+    document.body.appendChild(f);
+    f.animate([{transform:"translate(0,0)",opacity:1},{transform:`translate(${(Math.random()-.5)*160}px,${-120-Math.random()*160}px)`,opacity:0}],
+      {duration:1100+Math.random()*600,easing:"steps(9)"}).onfinish = () => f.remove();
+  }
+}
+$("#more").addEventListener("click", e => burst(e.currentTarget, 10));
+
+/* ---- game ---- */
+const W = 160, H = 90, G = 74, WORLD = 900, SPEED = 48;
+const cv = $("#game"), ctx = cv.getContext("2d");
+cv.width = W; cv.height = H;
+const PAL = {k:"#3b0f26",s:"#ffcfa8",p:"#ff5c93",o:"#ff8a2b",e:"#1d0713",b:"#7a1740",w:"#fff1ec",y:"#ffe28a",h:"#e8337a",g:"#ff9a3c"};
+const HER = ["..kkkk..",".kkkkkk.","kksssskk","ksessesk","kksssskk",".kppppk.","kppppppk","kppppppk",".pppppp.",".pppppp."];
+const HIM = ["..kkkk..",".kkkkkk.",".kssssk.",".ksesek.",".kssssk.","..ssss..",".oooooo.","soooooos","soooooos",".oooooo."];
+const LEGS = [[".ss..ss.",".kk..kk."],["..ss.ss.","...kk.kk"]];
+const HLEGS = [[".bb..bb.",".kk..kk."]];
+const HRT = [".XX.XX.","XXXXXXX","XXXXXXX",".XXXXX.","..XXX..","...X..."];
+const THORN = ["..k..",".kbk.","kbbbk","kbbbk"];
+const FLW = [[".p.","pyp",".p.",".b."],[".o.","oyo",".o.",".b."]];
+function spr(map,x,y,sc,col,fl){
+  map.forEach((row,j)=>{ for(let i=0;i<row.length;i++){ const c=row[i]; if(c==="."||c===" ") continue;
+    const k = fl ? row.length-1-i : i;
+    ctx.fillStyle = c==="X" ? col : PAL[c]; ctx.fillRect((x+k*sc)|0,(y+j*sc)|0,sc,sc); } });
+}
+const sky = document.createElement("canvas"); sky.width = W; sky.height = H;
+(function(){
+  const b = sky.getContext("2d");
+  ["#ff8a2b","#ff7440","#ff6554","#ff5f5f","#ff5575","#ff4f8b","#f2438b","#e8337a"].forEach((c,i)=>{ b.fillStyle=c; b.fillRect(0,i*G/8|0,W,Math.ceil(G/8)+1); });
+  b.fillStyle = "#ffe28a";
+  for(let dy=-15;dy<=15;dy++) for(let dx=-15;dx<=15;dx++) if(dx*dx+dy*dy<=225) b.fillRect(118+dx,30+dy,1,1);
+})();
+const CLOUDS = [[10,14,24,4],[14,10,14,4],[110,22,26,4],[114,18,14,4],[210,10,18,3],[260,26,22,4],[264,22,12,4]];
+function drawBG(cx){
+  ctx.drawImage(sky,0,0);
+  ctx.fillStyle = "rgba(255,241,236,.8)";
+  CLOUDS.forEach(([x,y,w,h])=>{ const sx = (((x - cx*.15) % 320) + 320) % 320 - 40; ctx.fillRect(sx|0,y,w,h); });
+  for(let x=0;x<W;x++){ const wx=x+cx*.35, h=14+Math.round(6*Math.sin(wx/17)+3*Math.sin(wx/6)); ctx.fillStyle="#c8266a"; ctx.fillRect(x,G-h,1,h); }
+  for(let x=0;x<W;x++){ const wx=x+cx*.65, h=6+Math.round(4*Math.sin(wx/9+2)); ctx.fillStyle="#a01d56"; ctx.fillRect(x,G-h,1,h); }
+  ctx.fillStyle = "#7a1740"; ctx.fillRect(0,G,W,H-G);
+  ctx.fillStyle = "#ff9a3c"; ctx.fillRect(0,G,W,3);
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  for(let x=-(cx%8|0);x<W;x+=8) ctx.fillRect(x,G+3,1,H-G);
+  for(let y=G+8;y<H;y+=6) ctx.fillRect(0,y,W,1);
+}
+
+const her = {x:8, dir:1, f:0, t:0, jy:0, vy:0, stun:0}, him = {x:880};
+const hearts = [200,470,740].map(x=>({x,got:false}));
+const thorns = [90,150,260,330,400,540,610,680,810].map(x=>({x}));
+const flowers = Array.from({length:26},(_,i)=>({x:30+i*34+(i*17)%13,k:i%2}));
+let state = "idle", holdR = false, holdL = false, got = 0, clock = 0, hugT = 0, parts = [], cx = 0;
+
+function pop(x,y,n){ for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()-.5)*30,vy:-14-Math.random()*26,l:1.2,c:["#ff5c93","#ffe28a","#fff1ec","#ff9a3c"][i%4]}); }
+function jump(){ if(state==="walk" && her.jy===0 && her.vy===0) her.vy = 150; }
+
+let last = 0;
+function frame(t){
+  const dt = Math.min(.05,(t-last)/1000||0); last = t; clock += dt;
+  her.stun = Math.max(0, her.stun-dt);
+  const dir = (holdR?1:0) - (holdL?1:0);
+  if(state==="walk"){
+    if(dir && her.stun<=0){ her.x = Math.max(0, her.x + dir*SPEED*dt); her.dir = dir; her.t += dt; if(her.t>.14){ her.t=0; her.f^=1; } }
+    if(her.jy>0 || her.vy>0){ her.jy += her.vy*dt; her.vy -= 420*dt; if(her.jy<=0){ her.jy=0; her.vy=0; } }
+    hearts.forEach(h=>{ if(!h.got && her.x+13>h.x && her.x+3<h.x+14 && G-24-her.jy<=42){
+      h.got=true; got++; $("#score").innerHTML = HEART+" "+got+"/3"; pop(h.x+6,36,12); } });
+    if(her.stun<=0) thorns.forEach(o=>{ if(her.x+13>o.x+1 && her.x+3<o.x+9 && her.jy<7){
+      her.stun=.35; her.x=Math.max(0,o.x-34); her.jy=0; her.vy=0; pop(o.x+5,G-8,6); } });
+    if(her.x >= him.x-15){ her.x = him.x-14; her.jy=0; her.dir=1; state="hug"; hugT=0; pop(him.x,40,26); }
+  }
+  if(state==="hug"){
+    hugT += dt;
+    if(hugT>.4 && Math.random()<.3) pop(him.x-6,44,2);
+    if(hugT>1.5 && !$("#clear").classList.contains("on")){ $("#clear").classList.add("on"); document.querySelectorAll(".pad .btn").forEach(b=>b.disabled=true); setTimeout(enter,2300); }
+  }
+  cx = Math.max(0, Math.min(WORLD-W, her.x-40));
+  $("#bar").style.width = Math.min(100, her.x/(him.x-15)*100) + "%";
+  drawBG(cx);
+  flowers.forEach(f=>{ if(f.x-cx>-8 && f.x-cx<W) spr(FLW[f.k],f.x-cx,G-8,2,null); });
+  thorns.forEach(o=>{ if(o.x-cx>-12 && o.x-cx<W) spr(THORN,o.x-cx,G-8,2,null); });
+  hearts.forEach((h,i)=>{ if(!h.got && h.x-cx>-16 && h.x-cx<W) spr(HRT,h.x-cx,30+Math.round(Math.sin(clock*4+i)*2),2,"#fff1ec"); });
+  const bob = state==="hug" ? 0 : Math.round(Math.sin(clock*3));
+  spr(HIM,him.x-cx,G-24+bob,2,null); spr(HLEGS[0],him.x-cx,G-4+bob,2,null);
+  if(!(her.stun>0 && Math.floor(clock*20)%2)){
+    const hf = (her.jy>0) ? 1 : (dir && state==="walk") ? her.f : 0;
+    spr(HER,her.x-cx,G-24-her.jy,2,null,her.dir<0); spr(LEGS[hf],her.x-cx,G-4-her.jy,2,null,her.dir<0);
+  }
+  if(state==="hug") spr(HRT,him.x-8-cx,G-40+Math.round(Math.sin(clock*5)*2),2,"#ff5c93");
+  parts = parts.filter(p=>p.l>0);
+  parts.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=24*dt; p.l-=dt; spr(HRT,(p.x-cx)|0,p.y|0,1,p.c); });
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+function begin(){
+  if(state!=="idle") return;
+  state="walk"; $("#title").style.display="none"; document.querySelectorAll(".pad .btn").forEach(b=>b.disabled=false); $("#walk").focus({preventScroll:true});
+}
+$("#start").addEventListener("click", begin);
+
+const hold = (id, on, off) => {
+  const b = $(id);
+  b.addEventListener("pointerdown", e => { on(); e.preventDefault(); });
+  ["pointerup","pointercancel","pointerleave"].forEach(t => b.addEventListener(t, off));
+  b.addEventListener("contextmenu", e => e.preventDefault());
+};
+hold("#walk", () => holdR = true, () => holdR = false);
+hold("#back", () => holdL = true, () => holdL = false);
+hold("#jump", jump, () => {});
+const R = ["ArrowRight","d","D"], L = ["ArrowLeft","a","A"], J = ["ArrowUp","w","W"," "];
+addEventListener("keydown", e => {
+  if(R.includes(e.key)){ holdR = true; e.preventDefault(); }
+  else if(L.includes(e.key)){ holdL = true; e.preventDefault(); }
+  else if(J.includes(e.key) && e.target.id !== "start"){ jump(); e.preventDefault(); }
+});
+addEventListener("blur", () => { holdR = holdL = false; });
+document.addEventListener("visibilitychange", () => { holdR = holdL = false; });
+addEventListener("keyup", e => { if(R.includes(e.key)) holdR = false; if(L.includes(e.key)) holdL = false; });
+
+function enter(){
+  const intro = $("#intro");
+  intro.classList.add("wipe");
+  document.body.classList.remove("lock");
+  $("#site").classList.add("in");
+  let done = false;
+  const fin = () => { if(done) return; done = true; intro.remove(); $("#title-h").focus({preventScroll:true}); };
+  intro.addEventListener("animationend", fin);
+  setTimeout(fin, 1400);
+}
+
+if(START_DATE){
+  const d = Math.floor((Date.now() - new Date(START_DATE + "T00:00:00")) / 864e5);
+  if(d >= 0){ const el = $("#days"); el.textContent = "DAYS PLAYED: " + d; el.hidden = false; }
+}
+</script>
+</body>
+</html>
