@@ -122,7 +122,7 @@ svg.h{width:1em;height:.86em;fill:currentColor;shape-rendering:crispEdges}
       <div class="ov" id="clear"><h2>LEVEL 3<br>CLEARED!</h2><small>I found you again.</small></div>
     </div>
     <div class="pad"><button class="btn" id="back" type="button" disabled>&#9664; BACK</button><button class="btn" id="walk" type="button" disabled>WALK &#9654;</button><button class="btn" id="jump" type="button" disabled>JUMP &#9650;</button></div>
-    <p id="tip">Move with the buttons or WASD / arrows. Hop the thorns, jump for the 3 hearts.</p>
+    <p id="tip">Move with the buttons or WASD / arrows. Hop the thorns, climb the crates, grab the 3 hearts.</p>
   </div>
 </section>
 
@@ -190,7 +190,7 @@ function burst(el, n){
 $("#more").addEventListener("click", e => burst(e.currentTarget, 10));
 
 /* ---- game ---- */
-const W = 160, H = 90, G = 74, WORLD = 900, SPEED = 48;
+const W = 160, H = 90, G = 74, WORLD = 4000, SPEED = 52;
 const cv = $("#game"), ctx = cv.getContext("2d");
 cv.width = W; cv.height = H;
 const PAL = {k:"#3b0f26",s:"#ffcfa8",p:"#ff5c93",o:"#ff8a2b",e:"#1d0713",b:"#7a1740",w:"#fff1ec",y:"#ffe28a",h:"#e8337a",g:"#ff9a3c"};
@@ -227,14 +227,37 @@ function drawBG(cx){
   for(let y=G+8;y<H;y+=6) ctx.fillRect(0,y,W,1);
 }
 
-const her = {x:8, dir:1, f:0, t:0, jy:0, vy:0, stun:0}, him = {x:880};
-const hearts = [200,470,740].map(x=>({x,got:false}));
-const thorns = [90,150,260,330,400,540,610,680,810].map(x=>({x}));
-const flowers = Array.from({length:26},(_,i)=>({x:30+i*34+(i*17)%13,k:i%2}));
-let state = "idle", holdR = false, holdL = false, got = 0, clock = 0, hugT = 0, parts = [], cx = 0;
+const her = {on:true, x:8, dir:1, f:0, t:0, jy:0, vy:0, stun:0}, him = {x:3980};
+const blocks = [];
+const B = (x,w,h) => blocks.push({x,w,h});
+[300,1350,2050,2200,2900,3100].forEach(x => B(x,24,16));          /* lone crates */
+B(880,24,16); B(904,24,32); B(928,24,16);                           /* pyramid + heart 1 */
+B(1800,24,16); B(1824,24,32); B(1848,24,48); B(1872,30,48); B(1902,24,32); B(1926,24,16); /* tower + heart 2 */
+for(let i=0;i<8;i++) B(2450+i*44,24,i%2?32:16);                     /* stepping stones */
+B(3250,24,16); B(3274,24,32); B(3298,30,48); B(3328,24,32); B(3352,24,16); /* castle + heart 3 */
+const hearts = [{x:908,y:10},{x:1876,y:10},{x:3302,y:10}].map(h=>({...h,got:false}));
+const thorns = [];
+for(let x=90,i=0; x<him.x-140; i++){
+  if(blocks.some(b => b.x < x+30 && b.x+b.w > x-60)){ x += 20; continue; }
+  thorns.push({x}); x += 70 + ((i*37)%5)*12;
+}
+const hitBlock = (x,jy) => blocks.find(b => x+13>b.x && x+3<b.x+b.w && jy < b.h-1);
+const support = (x,jy) => { let s=0; blocks.forEach(b => { if(x+13>b.x && x+3<b.x+b.w && b.h<=jy+1) s=Math.max(s,b.h); }); return s; };
+function drawBlock(b){
+  const x=(b.x-cx)|0, y=G-b.h;
+  if(x>W || x+b.w<0) return;
+  ctx.fillStyle="#3b0f26"; ctx.fillRect(x-1,y-1,b.w+2,b.h+1);
+  ctx.fillStyle="#a01d56"; ctx.fillRect(x,y,b.w,b.h);
+  ctx.fillStyle="rgba(59,15,38,.5)";
+  for(let yy=y+2,k=0; yy<G; yy+=8,k++){ ctx.fillRect(x,yy+7>G?G-1:yy+7,b.w,1); for(let xx=x+(k%2?4:8); xx<x+b.w; xx+=8) ctx.fillRect(xx,yy,1,Math.min(7,G-yy)); }
+  ctx.fillStyle="#ff9a3c"; ctx.fillRect(x,y,b.w,2);
+  ctx.fillStyle="#ffe28a"; ctx.fillRect(x,y,b.w,1);
+}
+const flowers = Array.from({length:64},(_,i)=>({x:30+i*34+(i*17)%13,k:i%2}));
+let tipStage = 0, state = "idle", holdR = false, holdL = false, got = 0, clock = 0, hugT = 0, parts = [], cx = 0;
 
 function pop(x,y,n){ for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()-.5)*30,vy:-14-Math.random()*26,l:1.2,c:["#ff5c93","#ffe28a","#fff1ec","#ff9a3c"][i%4]}); }
-function jump(){ if(state==="walk" && her.jy===0 && her.vy===0) her.vy = 150; }
+function jump(){ if(state==="walk" && her.on){ her.vy = 150; her.on = false; } }
 
 let last = 0;
 function frame(t){
@@ -242,12 +265,20 @@ function frame(t){
   her.stun = Math.max(0, her.stun-dt);
   const dir = (holdR?1:0) - (holdL?1:0);
   if(state==="walk"){
-    if(dir && her.stun<=0){ her.x = Math.max(0, her.x + dir*SPEED*dt); her.dir = dir; her.t += dt; if(her.t>.14){ her.t=0; her.f^=1; } }
-    if(her.jy>0 || her.vy>0){ her.jy += her.vy*dt; her.vy -= 420*dt; if(her.jy<=0){ her.jy=0; her.vy=0; } }
-    hearts.forEach(h=>{ if(!h.got && her.x+13>h.x && her.x+3<h.x+14 && G-24-her.jy<=42){
-      h.got=true; got++; $("#score").innerHTML = HEART+" "+got+"/3"; pop(h.x+6,36,12); } });
+    if(dir && her.stun<=0){
+      let nx = Math.max(0, her.x + dir*SPEED*dt);
+      const bl = hitBlock(nx, her.jy);
+      if(bl) nx = dir>0 ? bl.x-13 : bl.x+bl.w-3;
+      her.x = Math.max(0,nx); her.dir = dir; her.t += dt; if(her.t>.14){ her.t=0; her.f^=1; }
+    }
+    const prev = her.jy;
+    her.vy -= 420*dt; her.jy += her.vy*dt;
+    const sup = support(her.x, prev);
+    if(her.jy <= sup){ her.jy = sup; her.vy = 0; her.on = true; } else her.on = false;
+    hearts.forEach(h=>{ if(!h.got && her.x+13>h.x && her.x+3<h.x+14 && G-24-her.jy<=h.y+12){
+      h.got=true; got++; $("#score").innerHTML = HEART+" "+got+"/3"; pop(h.x+6,h.y+6,12); } });
     if(her.stun<=0) thorns.forEach(o=>{ if(her.x+13>o.x+1 && her.x+3<o.x+9 && her.jy<7){
-      her.stun=.35; her.x=Math.max(0,o.x-34); her.jy=0; her.vy=0; pop(o.x+5,G-8,6); } });
+      her.stun=.35; her.x=Math.max(0,o.x-34); pop(o.x+5,G-8,6); } });
     if(her.x >= him.x-15){ her.x = him.x-14; her.jy=0; her.dir=1; state="hug"; hugT=0; pop(him.x,40,26); }
   }
   if(state==="hug"){
@@ -256,15 +287,19 @@ function frame(t){
     if(hugT>1.5 && !$("#clear").classList.contains("on")){ $("#clear").classList.add("on"); document.querySelectorAll(".pad .btn").forEach(b=>b.disabled=true); setTimeout(enter,2300); }
   }
   cx = Math.max(0, Math.min(WORLD-W, her.x-40));
-  $("#bar").style.width = Math.min(100, her.x/(him.x-15)*100) + "%";
+  const pct = Math.min(1, her.x/(him.x-15));
+  $("#bar").style.width = pct*100 + "%";
+  const st = pct>.75 ? 3 : pct>.5 ? 2 : pct>.25 ? 1 : 0;
+  if(st > tipStage){ tipStage = st; $("#tip").textContent = ["","Keep going, he's waiting for you.","Halfway there!","Almost there..."][st]; }
   drawBG(cx);
   flowers.forEach(f=>{ if(f.x-cx>-8 && f.x-cx<W) spr(FLW[f.k],f.x-cx,G-8,2,null); });
+  blocks.forEach(drawBlock);
   thorns.forEach(o=>{ if(o.x-cx>-12 && o.x-cx<W) spr(THORN,o.x-cx,G-8,2,null); });
-  hearts.forEach((h,i)=>{ if(!h.got && h.x-cx>-16 && h.x-cx<W) spr(HRT,h.x-cx,30+Math.round(Math.sin(clock*4+i)*2),2,"#fff1ec"); });
+  hearts.forEach((h,i)=>{ if(!h.got && h.x-cx>-16 && h.x-cx<W) spr(HRT,h.x-cx,h.y+Math.round(Math.sin(clock*4+i)*2),2,"#fff1ec"); });
   const bob = state==="hug" ? 0 : Math.round(Math.sin(clock*3));
   spr(HIM,him.x-cx,G-24+bob,2,null); spr(HLEGS[0],him.x-cx,G-4+bob,2,null);
   if(!(her.stun>0 && Math.floor(clock*20)%2)){
-    const hf = (her.jy>0) ? 1 : (dir && state==="walk") ? her.f : 0;
+    const hf = !her.on ? 1 : (dir && state==="walk") ? her.f : 0;
     spr(HER,her.x-cx,G-24-her.jy,2,null,her.dir<0); spr(LEGS[hf],her.x-cx,G-4-her.jy,2,null,her.dir<0);
   }
   if(state==="hug") spr(HRT,him.x-8-cx,G-40+Math.round(Math.sin(clock*5)*2),2,"#ff5c93");
